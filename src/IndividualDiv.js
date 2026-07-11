@@ -106,7 +106,7 @@ class IndividualDiv extends LitElement {
 			</div>
 			<div>
 				<sc-text value="Current enveloppe"></sc-text>
-				<sc-text value="Current duration btw evnts"></sc-text>
+				<sc-text value="silence duration"></sc-text>
 				<sc-text value="evnt duration"></sc-text>
 			</div>
 			<div>

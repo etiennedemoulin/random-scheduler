@@ -45,13 +45,12 @@ class MainDiv extends LitElement {
 
     this.merger = null;
 
-    // @TODO read from config
     this.params = {
-      minDur:10,
-      maxDur:20, 
-      minInterDur: 10, 
-      maxInterDur: 30
+      minInterDur:0,
+      maxInterDur:0
     };
+
+    this.dirHandle1 = null;
 
   }
 
@@ -65,6 +64,7 @@ class MainDiv extends LitElement {
   }
 
   render() {
+
     const active = Object.keys(this.enveloppes).length !== 0;
 
     return html`
@@ -75,23 +75,31 @@ class MainDiv extends LitElement {
         value="Read"
         @input=${this.loadDirectory}
       ></sc-button>
+      ${active ? html`
+        <sc-button
+          value="Save"
+          @input=${this.saveConfig}
+        ></sc-button>
+      ` : nothing}
       </div>
-      <div>
-        <sc-text value="min inter evnt"></sc-text>
-        <sc-text value="max inter evnt"></sc-text>
-      </div>
-      <div>
-        <sc-number
-          min=0
-          value=${this.params.minInterDur}
-          @input=${e => this.params.minInterDur = e.detail.value}
-        ></sc-number>
-        <sc-number
-          min=0
-          value=${this.params.maxInterDur}
-          @input=${e => this.params.maxInterDur = e.detail.value}
-        ></sc-number>
-      </div>
+      ${active ? html`
+        <div>
+          <sc-text value="min silence"></sc-text>
+          <sc-text value="max silence"></sc-text>
+        </div>
+        <div>
+          <sc-number
+            min=0
+            value=${this.params.minInterDur}
+            @input=${e => this.params.minInterDur = e.detail.value}
+          ></sc-number>
+          <sc-number
+            min=0
+            value=${this.params.maxInterDur}
+            @input=${e => this.params.maxInterDur = e.detail.value}
+          ></sc-number>
+        </div>
+      ` : nothing}
       <div class="separator"></div>
 
       ${active ? html`
@@ -115,17 +123,30 @@ class MainDiv extends LitElement {
     `;
   }
 
+  async saveConfig() {
+
+    const contents = JSON.stringify(this.params);
+    const fileHandle = await this.dirHandle1.getFileHandle("config.json", { create: true });
+
+    // Create a FileSystemWritableFileStream to write to.
+    const writable = await fileHandle.createWritable();
+    // Write the contents of the file to the stream.
+    await writable.write(contents);
+    // Close the file and write the contents to disk.
+    await writable.close();
+  }
+
   async loadDirectory() {
 
-    const dirHandle1 = await window.showDirectoryPicker();
+    this.dirHandle1 = await window.showDirectoryPicker();
 
-    for await (const entry1 of dirHandle1.values()) {
+    for await (const entry1 of this.dirHandle1.values()) {
 
       if (entry1.kind === "directory") {
 
         this.enveloppes[entry1.name] = {};
 
-        const dirHandle2 = await dirHandle1.getDirectoryHandle(entry1.name);
+        const dirHandle2 = await this.dirHandle1.getDirectoryHandle(entry1.name);
 
         for await (const entry2 of dirHandle2.values()) {
 
@@ -147,10 +168,19 @@ class MainDiv extends LitElement {
             } 
           }
         }
+      } else {
+        if (entry1.name === 'config.json') {
+          const fileHandle = await this.dirHandle1.getFileHandle(entry1.name);
+          const file = await fileHandle.getFile();
+          const contents = await file.text();
+          this.params = JSON.parse(contents);
+        }
       }
     };
 
     this.requestUpdate();
+
+
   }
 
 
