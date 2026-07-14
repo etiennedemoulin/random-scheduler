@@ -19,6 +19,8 @@ export class Engine {
     this.env2.gain.setValueAtTime(0, this.audioContext.currentTime);
     this.osc2.start();
 
+    this.triggerTime = 0;
+
   }
 
   start() {
@@ -26,8 +28,8 @@ export class Engine {
     this.stop();
     const now = this.audioContext.currentTime;
 
-    const triggerTime = now + 0.05;
-    const attackTime = triggerTime + this.state.attack;
+    this.triggerTime = now + 0.05;
+    const attackTime = this.triggerTime + this.state.attack;
     const statTime1 = attackTime + this.state.stationary1;
     const decayTime = statTime1 + this.state.decay / 2;
     const statTime2 = decayTime + this.state.stationary2;
@@ -47,7 +49,7 @@ export class Engine {
     }
 
     // enveloppe volume
-    this.env.gain.setValueAtTime(0, triggerTime);
+    this.env.gain.setValueAtTime(0, this.triggerTime);
     this.env.gain.linearRampToValueAtTime(volume, attackTime);
     this.env.gain.setValueAtTime(volume, statTime1);
     this.env.gain.linearRampToValueAtTime(decayVolume, decayTime);
@@ -57,18 +59,18 @@ export class Engine {
     this.env.gain.linearRampToValueAtTime(0, releaseTime);
 
     // enveloppe frequency
-    this.osc.frequency.setValueAtTime(this.state.startFreq, triggerTime);
+    this.osc.frequency.setValueAtTime(this.state.startFreq, this.triggerTime);
     this.osc.frequency.setValueAtTime(this.state.startFreq, attackTime);
     this.osc.frequency.linearRampToValueAtTime(this.state.endFreq, statTime3);
 
     // visuel enveloppe
-    this.env2.gain.setValueAtTime(0, triggerTime);
+    this.env2.gain.setValueAtTime(0, this.triggerTime);
     this.env2.gain.linearRampToValueAtTime(volume2, attackTime);
     this.env2.gain.setValueAtTime(volume2, statTime3);
     this.env2.gain.linearRampToValueAtTime(0, releaseTime);
 
     // visuel frequency
-    this.osc2.frequency.setValueAtTime(this.state.freq2, triggerTime);
+    this.osc2.frequency.setValueAtTime(this.state.freq2, this.triggerTime);
 
   }
 
@@ -99,12 +101,34 @@ export class Engine {
     ];
   }
 
+  getAttack() {
+    if (this.state) {
+      return this.state.attack;
+    } else {
+      return 0
+    }
+  }
+
+  getRelease() {
+    if (this.state) {
+
+    return this.state.release;
+  } else {
+    return 0
+  }
+  }
+
   getEventDuration() {
     if (this.state) {
       return this.state.attack + this.state.stationary1 + this.state.decay + this.state.stationary2 + this.state.stationary3 + this.state.release;
     } else {
-      return null
+      return 0
     }
+  }
+
+  getCurrentTime() {
+    const eventDuration = this.getEventDuration();
+    return eventDuration - (this.audioContext.currentTime - this.triggerTime);
   }
 
   connect(destination, input, output) {

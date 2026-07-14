@@ -4,6 +4,7 @@ import '@ircam/sc-components';
 import './IndividualDiv.js';
 
 import { Engine } from './Engine.js';
+import { getRandomNumber } from './utils.js'
 
 class MainDiv extends LitElement {
 
@@ -45,12 +46,29 @@ class MainDiv extends LitElement {
 
     this.merger = null;
 
+    this.transportState = "stop";
+
     this.params = {
       minInterDur:0,
-      maxInterDur:0
+      maxInterDur:0,
+      minEvntDur:0,
+      maxEvntDur:0,
+      minRelease:0,
+      maxRelease:0,
+      minAttack:0,
+      maxAttack:0,
+      minCorpusChange:0,
+      maxCorpusChange:0,
+      corpus:null,
+      changedRelease:false,
+      mute:false
     };
 
     this.dirHandle1 = null;
+
+    this.enveloppeList = [];
+
+    this.process = this.process.bind(this);
 
   }
 
@@ -61,11 +79,31 @@ class MainDiv extends LitElement {
     this.merger.channelInterpretation = "discrete";
     this.merger.connect(this.audioContext.destination);
 
+    this.params.corpus = Object.keys(this.enveloppes)[0];
+
+
+    console.log(this.enveloppeList);
+
+  }
+
+  process(currentTime, processorTime, event) {
+
+    // const envList = Object.keys(this.enveloppes);
+    const randomInt = Math.floor(Math.random() * this.enveloppeList.length);
+    this.params.corpus = this.enveloppeList[randomInt];
+
+    // console.log("current corpus", this.params.corpus);
+    this.requestUpdate();
+
+    const nextTime = currentTime + getRandomNumber(this.params.minCorpusChange, this.params.maxCorpusChange);
+    return nextTime;
+
   }
 
   render() {
 
     const active = Object.keys(this.enveloppes).length !== 0;
+    // console.log(this.params.mute);
 
     return html`
       <div>
@@ -86,6 +124,9 @@ class MainDiv extends LitElement {
         <div>
           <sc-text value="min silence"></sc-text>
           <sc-text value="max silence"></sc-text>
+          <sc-text value="min evnt duration"></sc-text>
+          <sc-text value="max evnt duration"></sc-text>
+          <sc-text value="current corpus"></sc-text>
         </div>
         <div>
           <sc-number
@@ -97,6 +138,37 @@ class MainDiv extends LitElement {
             min=0
             value=${this.params.maxInterDur}
             @input=${e => this.params.maxInterDur = e.detail.value}
+          ></sc-number>
+          <sc-number
+            min=0
+            value=${this.params.minEvntDur}
+            @input=${e => this.params.minEvntDur = e.detail.value}
+          ></sc-number>
+          <sc-number
+            min=0
+            value=${this.params.maxEvntDur}
+            @input=${e => this.params.maxEvntDur = e.detail.value}
+          ></sc-number>
+          <sc-select
+            value="${this.params.corpus}"
+              options="${JSON.stringify(this.enveloppeList)}"
+              @change=${e => this.params.corpus = e.target.value}
+          ></sc-select>
+        </div>
+        <div>
+          <sc-text value="min release"></sc-text>
+          <sc-text value="max release"></sc-text>
+        </div>
+        <div>
+          <sc-number
+            min=0
+            value=${this.params.minRelease}
+            @input=${e => this.params.minRelease = e.detail.value}
+          ></sc-number>
+          <sc-number
+            min=0
+            value=${this.params.maxRelease}
+            @input=${e => this.params.maxRelease = e.detail.value}
           ></sc-number>
         </div>
       ` : nothing}
@@ -111,6 +183,7 @@ class MainDiv extends LitElement {
               <individual-div 
                 .id=${id} 
                 .params=${this.params} 
+                .transportState=${this.transportState}
                 .enveloppes=${this.enveloppes} 
                 .scheduler=${this.scheduler} 
                 .audioContext=${this.audioContext} 
@@ -136,10 +209,25 @@ class MainDiv extends LitElement {
     await writable.close();
   }
 
+  transport(e) {
+    switch(e) {
+    case 'start':
+      // this.transportState = "start";
+
+      this.scheduler.add(this.process, this.audioContext.currentTime + 0.05);
+      this.requestUpdate();
+      break;
+    case 'stop':
+      // this.transportState = "stop";
+      this.scheduler.remove(this.process, this.audioContext.currentTime + 0.05);
+      this.requestUpdate();
+      break;
+    }
+  }
+
   async loadDirectory() {
 
     this.dirHandle1 = await window.showDirectoryPicker();
-
     for await (const entry1 of this.dirHandle1.values()) {
 
       if (entry1.kind === "directory") {
@@ -158,7 +246,7 @@ class MainDiv extends LitElement {
 
             for await (const entry3 of dirHandle3.values()) {
 
-              if (entry3.kind === 'file') {
+              if (entry3.kind === 'file' && entry3.name !== '.DS_Store') {
 
                 const fileHandle = await dirHandle3.getFileHandle(entry3.name);
                 const file = await fileHandle.getFile();
@@ -178,12 +266,13 @@ class MainDiv extends LitElement {
       }
     };
 
+    if (Object.keys(this.enveloppes).length > 0) {
+      this.enveloppeList = Object.keys(this.enveloppes);
+    }
+
     this.requestUpdate();
 
-
   }
-
-
 }
 customElements.define('main-div', MainDiv);
 
