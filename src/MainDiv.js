@@ -158,6 +158,8 @@ class MainDiv extends LitElement {
         <div>
           <sc-text value="min release"></sc-text>
           <sc-text value="max release"></sc-text>
+          <sc-text value="min attack"></sc-text>
+          <sc-text value="max attack"></sc-text>
         </div>
         <div>
           <sc-number
@@ -170,10 +172,19 @@ class MainDiv extends LitElement {
             value=${this.params.maxRelease}
             @input=${e => this.params.maxRelease = e.detail.value}
           ></sc-number>
+          <sc-number
+            min=0
+            value=${this.params.minAttack}
+            @input=${e => this.params.minAttack = e.detail.value}
+          ></sc-number>
+          <sc-number
+            min=0
+            value=${this.params.maxAttack}
+            @input=${e => this.params.maxAttack = e.detail.value}
+          ></sc-number>
         </div>
       ` : nothing}
       <div class="separator"></div>
-
       ${active ? html`
         <div>
           ${[...Array(this.numChannels).keys()].map(id => {

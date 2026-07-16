@@ -18,7 +18,8 @@ class IndividualDiv extends LitElement {
 	  currentEnveloppe: { state: true },
 	  currentTime: { state : true },
 	  interDuration: { state: true },
-	  changedRelease: { state: true}
+	  changedRelease: { state: true },
+	  changedAttack: { state: true }
 	};
 
 	static styles = css`
@@ -57,6 +58,7 @@ class IndividualDiv extends LitElement {
 		this.interDuration = null;
 
 		this.changedRelease = false;
+		this.changedAttack = false;
 
 		this.transportState = "stop";
 
@@ -84,13 +86,18 @@ class IndividualDiv extends LitElement {
 		file.decay = file.decay * evntRatio;
 
 		if (this.changedRelease) {
-			// we need to change corpus
 
-			// console.log(this.changedRelease)
 			file.release = getRandomNumber(this.params.minRelease, this.params.maxRelease);
-			// file.attack = getRandomNumber(this.params.minAttack, this.params.maxAttack);
 
 			this.changedRelease = false;
+			this.requestUpdate();
+		}
+
+		if (this.changedAttack) {
+
+			file.attack = getRandomNumber(this.params.minAttack, this.params.maxAttack);
+
+			this.changedAttack = false;
 			this.requestUpdate();
 		}
 
@@ -129,6 +136,11 @@ class IndividualDiv extends LitElement {
 				<sc-toggle
 					.active="${this.changedRelease}"
             		@change=${e => this.changedRelease = true}
+          		></sc-toggle>
+				<sc-text value="change attack time"></sc-text>
+				<sc-toggle
+					.active="${this.changedAttack}"
+            		@change=${e => this.changedAttack = true}
           		></sc-toggle>
 			</div>
 			<div>
